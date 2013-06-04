@@ -55,10 +55,36 @@ name2midi = (name) ->
   note = {pitch: PitchClassNames.indexOf(pitch_name), bend, octave: Number(octave)}
   12 + note.pitch + note.bend + note.octave * 12
 
+progression = (root, chords) ->
+  scale = [0, 2, 4, 5, 7, 9, 11]
+  roman_numerals = 'I II III IV V VI VII'.split(/\s+/)
+  for name in chords.split(/[\s+\-]+/)
+    cr = name.toUpperCase().replace(/[♭67°ø+bcd]/g, '')
+    i = roman_numerals.indexOf cr
+    if i >= 0
+      acc = 0
+      acc = -1 if name.match /♭/
+      chord_root = midi2name(name2midi(root) + scale[i] + acc)
+      chord_type = "Major"
+      chord_type = "Minor" if name == name.toLowerCase()
+      chord_type = "aug" if name.match /\+/
+      chord_type = "dim" if name.match /°/
+      chord_type = "maj6" if name.match /6/
+      chord_type = "dom7" if name.match /7/
+      chord_type = "+7" if name.match /\+7/
+      chord_type = "°7" if name.match /°7/
+      chord_type = "ø7" if name.match /ø7/
+      # TODO inversions
+      # TODO 9, 13, sharp, natural
+      "#{chord_root}#{chord_type}"
+    else
+      name
+
 @Theory = {
   Chords
   PitchClassNames
   find_chord
   midi2name
   name2midi
+  progression
 }
