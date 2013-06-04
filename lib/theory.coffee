@@ -4,6 +4,7 @@ AccidentalValues = {'♯': 1, '#': 1, '♭': -1, 'b': -1, '𝄪': 2, '𝄫': -2}
 class Chord
   constructor: ({@name, @abbrs, @abbr, @pitch_classes, @root}) ->
     @abbrs = @abbrs.split(/s/) if typeof @abbrs == 'string'
+    @abbrs ||= [@abbr]
     @abbr ||= @abbrs[0]
     @pitch_classes = do (pitches=@pitch_classes) ->
       pitch_class_codes = {'t': 10, 'e': 11}
@@ -37,10 +38,11 @@ ChordDefinitions = [
 Chords = (new Chord(chord) for chord in ChordDefinitions)
 
 find_chord = (name) ->
-  throw "Note a chord name: #{name}" unless name.match /^([A-G][♯#♭b𝄪𝄫]*\d+)\s*(.*)$/
-  [root, name] = [RegExp.$1 or 'Major', RegExp.$2]
-  chord = (chord for chord in Chords when (chord) -> chord.name == name or name in chord.abbrs)[0]
-  throw "Note a chord name: #{name}" unless chord
+  return name if name instanceof Chord
+  throw "Not a chord name: #{name}" unless name.match /^([A-G][♯#♭b𝄪𝄫]*\d+)?\s*(.*)$/
+  [root, name] = [RegExp.$1, RegExp.$2 or 'Major']
+  chord = (chord for chord in Chords when chord.name == name or name in chord.abbrs)[0]
+  throw "Not a chord name: #{name}" unless chord
   chord = chord.at root if root != ''
   chord
 
@@ -59,14 +61,14 @@ progression = (root, chords) ->
   scale = [0, 2, 4, 5, 7, 9, 11]
   roman_numerals = 'I II III IV V VI VII'.split(/\s+/)
   for name in chords.split(/[\s+\-]+/)
-    cr = name.toUpperCase().replace(/[♭67°ø+bcd]/g, '')
-    i = roman_numerals.indexOf cr
+    cr = name.replace(/[♭67°ø\+bcd]/g, '')
+    i = roman_numerals.indexOf cr.toUpperCase()
     if i >= 0
       acc = 0
       acc = -1 if name.match /♭/
       chord_root = midi2name(name2midi(root) + scale[i] + acc)
       chord_type = "Major"
-      chord_type = "Minor" if name == name.toLowerCase()
+      chord_type = "Minor" if cr == cr.toLowerCase()
       chord_type = "aug" if name.match /\+/
       chord_type = "dim" if name.match /°/
       chord_type = "maj6" if name.match /6/
@@ -74,9 +76,13 @@ progression = (root, chords) ->
       chord_type = "+7" if name.match /\+7/
       chord_type = "°7" if name.match /°7/
       chord_type = "ø7" if name.match /ø7/
-      # TODO inversions
       # TODO 9, 13, sharp, natural
-      "#{chord_root}#{chord_type}"
+      chord = find_chord(chord_type).at(chord_root)
+      chord.inversion = 1 if name.match /b/
+      chord.inversion = 2 if name.match /c/
+      chord.inversion = 3 if name.match /d/
+      chord.notes = chord.notes[chord.inversion...].concat chord.notes[...chord.inversion] if chord.inversion?
+      chord
     else
       name
 

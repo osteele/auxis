@@ -18,13 +18,11 @@ t2 = ->
   player.rest 2
   player.chord 'C4', pick: '1202120', duration: 10
 
-{name2midi, midi2name, find_chord, progression} = @Theory
-
 play_progression = ->
-  chords = progression 'C4', 'I ii IV iii IV V I'
-  for chord in chords
-    player.chord chord, pick: '0121'
-    player.rest 1.75
+  player.progression 'I ii IV iii IV V I'
+  , root: 'C4'
+  , pick: '0121'
+  , arpeggio: .2
 
 Meteor.startup ->
   play_progression()

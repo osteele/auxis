@@ -1,4 +1,4 @@
-{PitchClassNames, find_chord, midi2name, name2midi} = @Theory
+{PitchClassNames, find_chord, midi2name, name2midi} = Theory = @Theory
 
 window.AudioContext ||= window.webkitAudioContext
 context = new window.AudioContext
@@ -68,10 +68,18 @@ chord = (chord, options={}) ->
     note n, _.extend({}, options, {start})
     start += options.arpeggio or 0
 
+progression = (chords, options={}) ->
+  chords = Theory.progression (options.root or 'C4'), chords if typeof chords == 'string'
+  for chord in chords
+    player.chord chord, options
+    dur = options.pick.length * options.arpeggio
+    player.rest dur
+
 rest = (r) -> Delay += r
 
-@Player = {
+@Player = player = {
   note
   chord
+  progression
   rest
 }
