@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require 'shellwords'
+
+src = ARGV[0]
+
+for file in Dir[File.join(src, '*.wav')]
+  next unless File.basename(file, '.wav') =~ /(piano)-(med|loud)-([a-g]b?\d)$/
+  puts `lame -V 9 #{file.shellescape} #{"./public/#{$1}/#{$2}/#{$3}.mp3".shellescape}`
+end
