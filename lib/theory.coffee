@@ -39,10 +39,10 @@ Chords = (new Chord(chord) for chord in ChordDefinitions)
 
 find_chord = (name) ->
   return name if name instanceof Chord
-  throw "Not a chord name: #{name}" unless name.match /^([A-G][♯#♭b𝄪𝄫]*\d+)?\s*(.*)$/
+  throw new Error "Not a chord name: #{name}" unless name.match /^([A-G][♯#♭b𝄪𝄫]*\d+)?\s*(.*)$/
   [root, name] = [RegExp.$1, RegExp.$2 or 'Major']
   chord = (chord for chord in Chords when chord.name == name or name in chord.abbrs)[0]
-  throw "Not a chord name: #{name}" unless chord
+  throw new Error "Not a chord name: #{name}" unless chord
   chord = chord.at root if root != ''
   chord
 
@@ -50,7 +50,7 @@ midi2name = (number) ->
   "#{PitchClassNames[(number + 12) % 12]}#{Math.floor((number - 12) / 12)}"
 
 name2midi = (name) ->
-  throw new Error("#{name} is not a note name") unless m = name.toUpperCase().match(/^([A-G])([♯#♭b𝄪𝄫]*)(\d+)/)
+  throw new Error "#{name} is not a note name" unless m = name.toUpperCase().match(/^([A-G])([♯#♭b𝄪𝄫]*)(\d+)/)
   [__, pitch_name, accidentals, octave] = m
   bend = 0
   bend += v * mm.length for k, v of AccidentalValues when mm = accidentals.match(RegExp(k, 'g'))
