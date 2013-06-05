@@ -3,11 +3,11 @@
 window.AudioContext ||= window.webkitAudioContext
 context = new window.AudioContext
 
-SampleNotes = ['B0'].concat ("D#{n}" for n in [0..8])
+SampleNotes = ['B0'].concat ("C#{n}" for n in [1..8])
 NoteBuffers = {}
 LoadingCallbacks = {}
 
-Delay = 0
+TimeOffset = 0
 
 loadAndPlay = (note, cb) ->
   return cb buffer if buffer = NoteBuffers[note]
@@ -23,14 +23,32 @@ loadAndPlay = (note, cb) ->
       NoteBuffers[note] = buffer
       cb buffer for cb in LoadingCallbacks[note]
       delete LoadingCallbacks[note]
-    , (e) -> console.error 'error loading', url if (e)
+    , (e) -> console.error 'error loading', url
   request.send()
 
-loadAndPlay(note, ->) for note in SampleNotes
+
+SampleNotesLoaded = false
+PlayOnLoad = []
+
+do ->
+  countdown = SampleNotes.length
+  for note in SampleNotes
+    loadAndPlay note, ->
+      return if SampleNotesLoaded
+      countdown -= 1
+      SampleNotesLoaded ||= countdown == 0
+      return unless SampleNotesLoaded
+      TimeOffset = context.currentTime
+      fn() for fn in PlayOnLoad
+      PlayOnLoad = null
+
+onload = (fn) ->
+  return fn() if SampleNotesLoaded
+  PlayOnLoad.push fn
 
 note = (note, options={}) ->
   options = _.extend {gain: 1, duration: 3}, options
-  startTime = context.currentTime + Delay + (options.start or 0)
+  startTime = TimeOffset + (options.start or 0)
   bend = options.bend or 0
   {duration} = options
   duration = .5 if options.staccato
@@ -62,24 +80,32 @@ chord = (chord, options={}) ->
   if options.pick
     for n in options.pick
       note chord.notes[Number(n)], _.extend({}, options, {start})
-      start += options.arpeggio or .25
+      start += options.note_separation or .25
     return
   for n, i in chord.notes
     note n, _.extend({}, options, {start})
-    start += options.arpeggio or 0
+    start += options.note_separation if options.arpeggiate
 
 progression = (chords, options={}) ->
-  chords = Theory.progression (options.root or 'C4'), chords if typeof chords == 'string'
+  options = _.extend {root: 'C4', note_separation: .2, chord_separation: .2}, options
+  chords = Theory.progression options.root, chords if typeof chords == 'string'
   for chord in chords
     player.chord chord, options
-    dur = options.pick.length * options.arpeggio
+    dur = options.pick?.length * options.note_separation or 0
+    dur += options.chord_separation
     player.rest dur
 
-rest = (r) -> Delay += r
+rewind = ->
+  TimeOffset = context.currentTime
+
+rest = (t) ->
+  TimeOffset += t
 
 @Player = player = {
   note
   chord
   progression
   rest
+  rewind
+  onload
 }

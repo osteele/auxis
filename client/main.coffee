@@ -18,11 +18,21 @@ t2 = ->
   player.rest 2
   player.chord 'C4', pick: '1202120', duration: 10
 
-play_progression = ->
-  player.progression 'I ii IV iii IV V I'
-  , root: 'C4'
+t3 = ->
+  player.progression 'I Ib Ic ii IV iii IVb V7 V7b V7c Ic Ib I'
   , pick: '0121'
-  , arpeggio: .2
+  , chord_separation: 0
+  , gain: .5
+
+  player.progression 'I IV V ii V7 I'
+  , chord_separation: .5
+  , gain: .5
+
+Template.hello.events
+  'click input': () ->
+    player.rewind()
+    t3()
 
 Meteor.startup ->
-  play_progression()
+  player.onload ->
+    t3()
