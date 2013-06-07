@@ -5,7 +5,15 @@ module.exports = (grunt) ->
       app: ['**/*.coffee']
       options:
         max_line_length: { value: 120 }
+    peg:
+      music:
+        grammar: 'grammars/music.peg'
+        outputFile: 'meteor/lib/music-parser.js'
+        exportVar: "MusicParser"
     watch:
+      peg:
+        files: ['grammars/music.peg']
+        tasks: ['peg:music']
       scripts:
         files: ['**/*.coffee']
         tasks: ['coffeelint']
@@ -14,5 +22,6 @@ module.exports = (grunt) ->
 
   grunt.loadNpmTasks 'grunt-coffeelint'
   grunt.loadNpmTasks 'grunt-contrib-watch'
+  grunt.loadNpmTasks 'grunt-peg'
 
   grunt.registerTask 'default', ['watch']

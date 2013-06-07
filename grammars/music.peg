@@ -1,2 +1,41 @@
-start = 'a'
+note = name:[A-G]i octave:[0-9]? accidentals:[♯#♭b𝄪𝄫]*
+  {
+    accidentals = accidentals.join('').replace(/#/g, '♯').replace(/b/g, '♭');
+    var sharps = (accidentals.match(/♯/g) || '').length + 2 * (accidentals.match(/𝄪/g) || '').length;
+    var flats = (accidentals.match(/♭/g) || '').length + 2 * (accidentals.match(/𝄫/g) || '').length;
+    return {
+      name: name
+    , octave: octave && Number(octave)
+    , sharp: sharps - flats
+    }
+  }
 
+chord =
+  root:(note / ('I'i / 'II'i / 'III'i / 'IV'i / 'V'i / 'VI'i / 'VII'i))
+  quality:('major'i / 'maj'i / 'minor'i / 'min'i / 'M' / 'm' / 'aug'i / 'dim'i / 'dom'i / [Δ\-+°oø] / 'sus2'i / 'sus4'i / 'mM' / 'm/M')?
+  seventh:[679]?
+  alter:([♯#♭b+\-]5)?
+  extension:([246] / 'add11' / 'add13')?
+  bass:('/' note)?
+  {
+    // TODO (♭5), m7♭9♭13, maj13♯11, 7ø♭9♭13, add2, add4, 7♯9, 7/6
+    // TODO V/V
+    quality = {M: 'major', m: 'minor'}[quality] || quality || 'major';
+    quality = quality.toLowerCase();
+    quality = {maj: 'major', min: 'minor', 'Δ': 'major', '-': 'minor', '+': 'aug', '°': 'dim', 'o': 'dim', 'ø': 'm7♭5'}[quality] || quality;
+    return {
+      root: root
+    , quality: quality || 'major'
+    , bass: bass && bass[1]
+    , add: add};
+  }
+
+progression = head:chord tail:((s? [\-–—] s? / s) c:chord)*
+  {
+    var chords = [head];
+    tail.forEach(function(t) {chords.push(t[1])});
+    return chords;
+  }
+
+s
+  = [ \t\r\n\f]+
