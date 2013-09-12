@@ -24,8 +24,17 @@ module.exports = (grunt) ->
         expand: true
         cwd: 'app'
         dest: 'build'
-        src: ['**/*', '!**/*.coffee']
+        src: ['**/*', '!**/*.coffee', '!**/*.jade', '!**/*.scss']
         filter: 'isFile'
+    jade:
+      debug:
+        expand: true
+        cwd: 'app'
+        src: '**/*.jade'
+        dest: 'build'
+        ext: '.html'
+        options:
+          pretty: true
     peg:
       music:
         grammar: 'grammars/music.peg'
@@ -40,6 +49,9 @@ module.exports = (grunt) ->
     watch:
       options:
         livereload: true
+      jade:
+        files: ['app/**/*.jade']
+        tasks: ['jade:debug']
       play:
         files: ['midi-api-play.coffee']
         tasks: ['shell:play']
@@ -58,10 +70,11 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-coffee'
   grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks 'grunt-contrib-copy'
+  grunt.loadNpmTasks 'grunt-contrib-jade'
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-peg'
   grunt.loadNpmTasks 'grunt-shell'
   grunt.loadNpmTasks 'grunt-notify'
 
-  grunt.registerTask 'build', ['coffee:debug', 'copy:debug']
+  grunt.registerTask 'build', ['coffee:debug', 'copy:debug', 'jade:debug']
   grunt.registerTask 'default', ['build', 'connect', 'watch']
