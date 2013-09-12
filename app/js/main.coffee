@@ -42,11 +42,10 @@ t4 = ->
         tempo *= .9
         # gain *= .9
 
-Template.hello.events
-  'click input': () ->
-    player.rewind()
-    t1()
+@play = ->
+  player.rewind()
+  t1()
 
-Meteor.startup ->
-  player.onload ->
-    t3()
+# Meteor.startup ->
+#   player.onload ->
+#     t3()

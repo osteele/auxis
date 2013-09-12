@@ -14,7 +14,7 @@ loadAndPlay = (note, cb) ->
   LoadingCallbacks[note] ||= []
   LoadingCallbacks[note].push cb
   return if LoadingCallbacks[note].length > 1
-  url = "/piano/med/#{note.toUpperCase()}.mp3"
+  url = "/media/piano/med/#{note.toUpperCase()}.mp3"
   request = new XMLHttpRequest
   request.open 'GET', url, true
   request.responseType = 'arraybuffer'
