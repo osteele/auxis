@@ -28,10 +28,24 @@ t3 = ->
   , chord_separation: .5
   , gain: .5
 
+t4 = ->
+  for track_number in [0...5]
+    break unless track_number == 0
+    chord = ['C4', 'G4', 'D5', 'F5', 'E6'][track_number]
+    player.with_track (t) ->
+      # player.rest track_number * 5
+      gain = 1
+      tempo = 5
+      for i in [1..100]
+        player.note chord, gain: gain, start: Math.pow(1 + .1, i)
+        # player.rest 1 * tempo
+        tempo *= .9
+        # gain *= .9
+
 Template.hello.events
   'click input': () ->
     player.rewind()
-    t3()
+    t1()
 
 Meteor.startup ->
   player.onload ->

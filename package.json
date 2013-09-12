@@ -17,6 +17,7 @@
     "grunt-peg": "~0.2.0",
     "grunt": "~0.4.1",
     "grunt-contrib-watch": "~0.4.4",
-    "grunt-coffeelint": "0.0.6"
+    "grunt-coffeelint": "0.0.6",
+    "grunt-shell": "~0.2.2"
   }
 }

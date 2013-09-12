@@ -101,6 +101,13 @@ rewind = ->
 rest = (t) ->
   TimeOffset += t
 
+with_track = (fn) ->
+  saved_time_offset = TimeOffset
+  try
+    fn()
+  finally
+    TimeOffset = saved_time_offset
+
 @Player = player = {
   note
   chord
@@ -108,4 +115,5 @@ rest = (t) ->
   rest
   rewind
   onload
+  with_track
 }
