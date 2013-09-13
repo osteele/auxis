@@ -62,9 +62,7 @@ module.exports = (grunt) ->
         tasks: ['peg:music']
       scripts:
         files: ['app/**/*.coffee']
-        tasks: ['coffee']
-        options:
-          nospawn: true
+        tasks: ['coffee:debug']
 
   grunt.loadNpmTasks 'grunt-coffeelint'
   grunt.loadNpmTasks 'grunt-contrib-coffee'

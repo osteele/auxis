@@ -1,5 +1,8 @@
 {PitchClassNames, find_chord, midi2name, name2midi} = Theory = @Theory
 
+PianoSampleURLBase = "/media/piano/med/"
+PianoSampleURLBase = "https://s3.amazonaws.com/assets.osteele.com/audio/piano/med/"
+
 window.AudioContext ||= window.webkitAudioContext
 context = new window.AudioContext
 
@@ -14,11 +17,11 @@ loadAndPlay = (note, cb) ->
   LoadingCallbacks[note] ||= []
   LoadingCallbacks[note].push cb
   return if LoadingCallbacks[note].length > 1
-  url = "/media/piano/med/#{note.toUpperCase()}.mp3"
+  url = "#{PianoSampleURLBase}#{note.toLowerCase()}.mp3"
   request = new XMLHttpRequest
   request.open 'GET', url, true
   request.responseType = 'arraybuffer'
-  request.onload = () ->
+  request.onload = ->
     context.decodeAudioData request.response, (buffer) ->
       NoteBuffers[note] = buffer
       cb buffer for cb in LoadingCallbacks[note]
