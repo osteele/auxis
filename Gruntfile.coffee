@@ -1,24 +1,18 @@
 module.exports = (grunt) ->
   grunt.initConfig
     pkg: grunt.file.readJSON('package.json')
-    coffee:
+    browserify:
       debug:
-        expand: true
-        cwd: 'app'
-        src: '**/*.coffee'
-        dest: 'build'
-        ext: '.js'
+        files: [{src: 'app/**/*.coffee', dest:'build/js/player.js'}]
         options:
-          bare: true
-          sourceMap: true
+          transform: ['coffeeify']
+          debug: true
+          fast: true
       release:
-        expand: true
-        cwd: 'app'
-        src: '**/*.coffee'
-        dest: 'release'
-        ext: '.js'
+        files: [{src: 'app/**/*.coffee', dest:'release/js/player.js'}]
         options:
-          bare: true
+          transform: ['coffeeify']
+          fast: true
     coffeelint:
       app: ['Gruntfile.coffee', 'app/**/*.coffee']
       options:
@@ -85,10 +79,10 @@ module.exports = (grunt) ->
         tasks: ['peg:music']
       scripts:
         files: ['app/**/*.coffee']
-        tasks: ['coffee:debug']
+        tasks: ['browserify:debug']
 
+  grunt.loadNpmTasks 'grunt-browserify'
   grunt.loadNpmTasks 'grunt-coffeelint'
-  grunt.loadNpmTasks 'grunt-contrib-coffee'
   grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-contrib-jade'
@@ -98,7 +92,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-shell'
   grunt.loadNpmTasks 'grunt-notify'
 
-  grunt.registerTask 'build', ['coffee:debug', 'copy:debug', 'jade:debug']
-  grunt.registerTask 'build:release', ['coffee:release', 'copy:release', 'jade:release']
+  grunt.registerTask 'build', ['browserify:debug', 'copy:debug', 'jade:debug']
+  grunt.registerTask 'build:release', ['browserify:release', 'copy:release', 'jade:release']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']

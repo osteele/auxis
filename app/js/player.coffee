@@ -1,4 +1,4 @@
-{PitchClassNames, find_chord, midi2name, name2midi} = Theory = @Theory
+{PitchClassNames, find_chord, midi2name, name2midi} = require './theory.coffee'
 
 PianoSampleURLBase = "/media/piano/med/"
 PianoSampleURLBase = "https://s3.amazonaws.com/assets.osteele.com/audio/piano/med/"
@@ -111,7 +111,7 @@ with_track = (fn) ->
   finally
     TimeOffset = saved_time_offset
 
-@Player = player = {
+module.exports = {
   note
   chord
   progression

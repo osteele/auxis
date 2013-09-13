@@ -12,8 +12,10 @@
   "author": "Oliver Steele <steele@osteele.com> ",
   "license": "MIT",
   "devDependencies": {
+    "coffeeify": "~0.5.1",
     "peg": "0.0.0",
     "grunt": "~0.4.1",
+    "grunt-browserify": "~1.2.4",
     "grunt-peg": "~0.2.0",
     "grunt-shell": "~0.2.2",
     "grunt-coffeelint": "0.0.6",

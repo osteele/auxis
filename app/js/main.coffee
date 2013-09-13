@@ -1,4 +1,4 @@
-player = @Player
+player = require './player.coffee'
 
 pieces = {}
 

@@ -86,7 +86,7 @@ progression = (root, chords) ->
     else
       name
 
-@Theory = {
+module.exports = {
   Chords
   PitchClassNames
   find_chord
