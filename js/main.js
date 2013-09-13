@@ -1,8 +1,14 @@
-var player, t1, t2, t3, t4;
+var app, piece, pieces, player;
 
 player = this.Player;
 
-t1 = function() {
+pieces = {};
+
+piece = function(name, def) {
+  return pieces[name] = def;
+};
+
+piece('single notes', function() {
   player.note('c4');
   player.note('e4', {
     start: 1 / 2
@@ -22,9 +28,9 @@ t1 = function() {
     start: 3,
     gain: 0.2
   });
-};
+});
 
-t2 = function() {
+piece('arpeggiated chords', function() {
   player.chord('C4', {
     pick: '0121212'
   });
@@ -41,9 +47,9 @@ t2 = function() {
     pick: '1202120',
     duration: 10
   });
-};
+});
 
-t3 = function() {
+piece('chord progression', function() {
   player.progression('I Ib Ic ii IV iii IVb V7 V7b V7c Ic Ib I', {
     pick: '0121',
     chord_separation: 0,
@@ -53,35 +59,28 @@ t3 = function() {
     chord_separation: .5,
     gain: .5
   });
-};
+});
 
-t4 = function() {
-  var chord, track_number, _i, _results;
-  _results = [];
-  for (track_number = _i = 0; _i < 5; track_number = ++_i) {
-    if (track_number !== 0) {
-      break;
+app = angular.module('Player', []);
+
+app.controller('Player', function($scope) {
+  var fn, name;
+  $scope.pieces = (function() {
+    var _results;
+    _results = [];
+    for (name in pieces) {
+      fn = pieces[name];
+      _results.push({
+        name: name,
+        fn: fn
+      });
     }
-    chord = ['C4', 'G4', 'D5', 'F5', 'E6'][track_number];
-    _results.push(player.with_track(function(t) {
-      var gain, i, tempo, _j, _results1;
-      gain = 1;
-      tempo = 5;
-      _results1 = [];
-      for (i = _j = 1; _j <= 100; i = ++_j) {
-        player.note(chord, {
-          gain: gain,
-          start: Math.pow(1 + .1, i)
-        });
-        _results1.push(tempo *= .9);
-      }
-      return _results1;
-    }));
-  }
-  return _results;
-};
-
-this.play = function() {
-  player.rewind();
-  return t1();
-};
+    return _results;
+  })();
+  return $scope.play = function(_arg) {
+    var fn;
+    fn = _arg.fn;
+    player.rewind();
+    return fn();
+  };
+});
