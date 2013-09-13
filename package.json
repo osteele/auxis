@@ -13,7 +13,6 @@
   "license": "MIT",
   "devDependencies": {
     "coffeeify": "~0.5.1",
-    "peg": "0.0.0",
     "grunt": "~0.4.1",
     "grunt-browserify": "~1.2.4",
     "grunt-peg": "~0.2.0",
@@ -27,6 +26,7 @@
     "grunt-contrib-jade": "~0.8.0",
     "grunt-github-pages": "0.0.3",
     "grunt-clean": "~0.4.0",
-    "grunt-contrib-clean": "~0.5.0"
+    "grunt-contrib-clean": "~0.5.0",
+    "peg": "0.0.0"
   }
 }

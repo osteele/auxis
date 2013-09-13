@@ -3,13 +3,13 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON('package.json')
     browserify:
       debug:
-        files: [{src: 'app/**/*.coffee', dest:'build/js/player.js'}]
+        files: ['build/js/player.js': 'app/**/*.coffee']
         options:
           transform: ['coffeeify']
           debug: true
           fast: true
       release:
-        files: [{src: 'app/**/*.coffee', dest:'release/js/player.js'}]
+        files: ['release/js/player.js': 'app/**/*.coffee']
         options:
           transform: ['coffeeify']
           fast: true
@@ -70,18 +70,18 @@ module.exports = (grunt) ->
       options:
         livereload: true
       jade:
-        files: ['app/**/*.jade']
+        files: 'app/**/*.jade'
         tasks: ['jade:debug']
       play:
-        files: ['midi-api-play.coffee']
+        files: 'midi-api-play.coffee'
         tasks: ['shell:play']
         options:
           nospawn: true
       peg:
-        files: ['grammars/music.peg']
+        files: 'grammars/music.peg'
         tasks: ['peg:music']
       scripts:
-        files: ['app/**/*.coffee']
+        files: 'app/**/*.coffee'
         tasks: ['browserify:debug']
 
   grunt.loadNpmTasks 'grunt-browserify'
@@ -92,9 +92,9 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-contrib-clean'
   grunt.loadNpmTasks 'grunt-github-pages'
+  grunt.loadNpmTasks 'grunt-notify'
   grunt.loadNpmTasks 'grunt-peg'
   grunt.loadNpmTasks 'grunt-shell'
-  grunt.loadNpmTasks 'grunt-notify'
 
   grunt.registerTask 'build', ['clean:debug', 'browserify:debug', 'copy:debug', 'jade:debug']
   grunt.registerTask 'build:release', ['clean:release', 'browserify:release', 'copy:release', 'jade:release']
