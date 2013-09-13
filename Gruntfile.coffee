@@ -11,6 +11,14 @@ module.exports = (grunt) ->
         options:
           bare: true
           sourceMap: true
+      release:
+        expand: true
+        cwd: 'app'
+        src: '**/*.coffee'
+        dest: 'release'
+        ext: '.js'
+        options:
+          bare: true
     coffeelint:
       app: ['Gruntfile.coffee', 'app/**/*.coffee']
       options:
@@ -26,6 +34,15 @@ module.exports = (grunt) ->
         dest: 'build'
         src: ['**/*', '!**/*.coffee', '!**/*.jade', '!**/*.scss']
         filter: 'isFile'
+      release:
+        expand: true
+        cwd: 'app'
+        dest: 'release'
+        src: ['**/*', '!**/*.coffee', '!**/*.jade', '!**/*.scss']
+        filter: 'isFile'
+    githubPages:
+      target:
+        src: 'release'
     jade:
       debug:
         expand: true
@@ -35,6 +52,12 @@ module.exports = (grunt) ->
         ext: '.html'
         options:
           pretty: true
+      release:
+        expand: true
+        cwd: 'app'
+        src: '**/*.jade'
+        dest: 'release'
+        ext: '.html'
     peg:
       music:
         grammar: 'grammars/music.peg'
@@ -70,9 +93,12 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-contrib-jade'
   grunt.loadNpmTasks 'grunt-contrib-watch'
+  grunt.loadNpmTasks 'grunt-github-pages'
   grunt.loadNpmTasks 'grunt-peg'
   grunt.loadNpmTasks 'grunt-shell'
   grunt.loadNpmTasks 'grunt-notify'
 
   grunt.registerTask 'build', ['coffee:debug', 'copy:debug', 'jade:debug']
+  grunt.registerTask 'build:release', ['coffee:release', 'copy:release', 'jade:release']
+  grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']
