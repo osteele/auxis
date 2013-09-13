@@ -1,10 +1,10 @@
 {
-  "name": "thunus",
+  "name": "auxis",
   "version": "0.0.0",
   "description": "Playground for melody and harmony synthesis",
   "repository": {
     "type": "git",
-    "url": "git@github.com:osteele/tunini.git"
+    "url": "git@github.com:osteele/auxis.git"
   },
   "keywords": [
     "music"

@@ -1,7 +1,7 @@
 doctype 5
 html(lang="en", ng:app="Player", ng:controller="Player")
   head
-    title Thunnus
+    title Auxis
 
     link(href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/css/bootstrap.min.css", rel="stylesheet", type="text/css")
 
@@ -15,3 +15,5 @@ html(lang="en", ng:app="Player", ng:controller="Player")
     ul
       li(ng:repeat="piece in pieces")
         input(type="button", value="{{piece.name}}", ng:click="play(piece)")
+
+    p If no sound plays the first time, try reloading the page.
