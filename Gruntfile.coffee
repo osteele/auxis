@@ -13,6 +13,9 @@ module.exports = (grunt) ->
         options:
           transform: ['coffeeify']
           fast: true
+    clean:
+      debug: 'build'
+      release: 'release/*'
     coffeelint:
       app: ['Gruntfile.coffee', 'app/**/*.coffee']
       options:
@@ -87,12 +90,13 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-contrib-jade'
   grunt.loadNpmTasks 'grunt-contrib-watch'
+  grunt.loadNpmTasks 'grunt-contrib-clean'
   grunt.loadNpmTasks 'grunt-github-pages'
   grunt.loadNpmTasks 'grunt-peg'
   grunt.loadNpmTasks 'grunt-shell'
   grunt.loadNpmTasks 'grunt-notify'
 
-  grunt.registerTask 'build', ['browserify:debug', 'copy:debug', 'jade:debug']
-  grunt.registerTask 'build:release', ['browserify:release', 'copy:release', 'jade:release']
+  grunt.registerTask 'build', ['clean:debug', 'browserify:debug', 'copy:debug', 'jade:debug']
+  grunt.registerTask 'build:release', ['clean:release', 'browserify:release', 'copy:release', 'jade:release']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']

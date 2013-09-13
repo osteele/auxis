@@ -25,6 +25,8 @@
     "grunt-contrib-watch": "~0.4.4",
     "grunt-notify": "~0.2.13",
     "grunt-contrib-jade": "~0.8.0",
-    "grunt-github-pages": "0.0.3"
+    "grunt-github-pages": "0.0.3",
+    "grunt-clean": "~0.4.0",
+    "grunt-contrib-clean": "~0.5.0"
   }
 }
