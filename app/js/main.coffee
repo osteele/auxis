@@ -5,7 +5,7 @@ pieces = {}
 piece = (name, def) ->
   pieces[name] = def
 
-piece 'notes', ->
+piece 'single notes', ->
   player.note 'c4'
   player.note 'e4', start: 1/2
   player.note 'g4', start: 1
@@ -33,6 +33,11 @@ piece 'chord progression', ->
   , chord_separation: .5
   , gain: .5
 
-@play = ->
-  player.rewind()
-  pieces['chord progression']()
+app = angular.module 'Player', []
+
+app.controller 'Player', ($scope) ->
+  $scope.pieces = ({name, fn} for name, fn of pieces)
+
+  $scope.play = ({fn}) ->
+    player.rewind()
+    fn()

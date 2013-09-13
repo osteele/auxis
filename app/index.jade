@@ -1,12 +1,14 @@
 doctype 5
-html
+html(lang="en", ng:app="Player", ng:controller="Player")
   head
     title Thunnus
     script(src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js")
+    script(src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js")
     script(src="./js/music-parser.js", defer)
     script(src="./js/theory.js", defer)
     script(src="./js/player.js", defer)
     script(src="./js/main.js", defer)
 
   body
-    input(type="button", value="Play", onclick="play()")
+    div(ng:repeat="piece in pieces")
+      input(type="button", value="{{piece.name}}", ng:click="play(piece)")
