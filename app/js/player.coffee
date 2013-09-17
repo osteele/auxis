@@ -37,61 +37,36 @@ xhrPromise = (options={}) ->
 SampleManager =
   sampleNotes: ['B0'].concat ("C#{n}" for n in [1..8])
   noteBuffers: {}
-  loadingCallbacks: {}
   sampleNotesLoaded: false
-  playOnLoad: []
 
-  withNoteBuffer: (note, cb) ->
-    return cb(buffer) if buffer = @noteBuffers[note]
-    @loadingCallbacks[note] ||= []
-    @loadingCallbacks[note].push cb
-    return if @loadingCallbacks[note].length > 1
-    url = "#{PianoSampleURLBase}#{note.toLowerCase()}.mp3"
-    xhrPromise({url, responseType: 'arraybuffer'})
-      .then (buffer) =>
-        @noteBuffers[note] = buffer
-        cb(buffer) for cb in @loadingCallbacks[note]
-        delete @loadingCallbacks[note]
-      .done()
+  getNoteBuffer: (note) ->
+    @noteBuffers[note] or= do ->
+      url = "#{PianoSampleURLBase}#{note.toLowerCase()}.mp3"
+      xhrPromise({url, responseType: 'arraybuffer'})
 
-  load: ->
-    countdown = @sampleNotes.length
-    for note in @sampleNotes
-      @withNoteBuffer note, =>
-        return if @sampleNotesLoaded
-        countdown -= 1
-        @sampleNotesLoaded ||= countdown == 0
-        return unless @sampleNotesLoaded
-        fn() for fn in @playOnLoad
-        playOnLoad = null
+  loadSamples: ->
+    Q.all(@getNoteBuffer(note) for note in @sampleNotes)
 
-  onload: (cb) ->
-    return window.setTimeout(cb, 1) if @sampleNotesLoaded
-    @playOnLoad.push cb
 
 class SampleBufferManager
-  loadingCallbacks: {}
   noteBuffers: {}
 
   constructor: (@audioContext) ->
     @sampleNotes = SampleManager.sampleNotes
-    @sampleNotes.map (note) =>
-      @withNoteBuffer note, ->
+    @loadSamples()
 
-  onload: (cb) ->
-    SampleManager.onload(cb)
+  loadSamples: (cb) ->
+    Q.all(@getNoteBuffer(note) for note in @sampleNotes)
 
-  withNoteBuffer: (note, cb) ->
-    return cb(buffer) if buffer = @noteBuffers[note]
-    @loadingCallbacks[note] ||= []
-    @loadingCallbacks[note].push cb
-    return if @loadingCallbacks[note].length > 1
-    SampleManager.withNoteBuffer note, (arrayBuffer) =>
-      @audioContext.decodeAudioData arrayBuffer, (buffer) =>
-        @noteBuffers[note] = buffer
-        cb(buffer) for cb in @loadingCallbacks[note]
-        delete @loadingCallbacks[note]
-      , (e) -> console.error 'error decoding', note
+  getNoteBuffer: (note, cb) ->
+    @noteBuffers[note] or=
+      SampleManager.getNoteBuffer(note)
+      .then (arrayBuffer) =>
+        d = Q.defer()
+        @audioContext.decodeAudioData arrayBuffer, (buffer) =>
+          d.resolve buffer
+        , (e) -> d.reject "error decoding #{note}"
+        d.promise
 
 Player =
   audioContext: null
@@ -100,8 +75,7 @@ Player =
   init: ->
     context = @audioContext = new window.AudioContext
     bufferManager = @sampleBufferManager = new SampleBufferManager(context)
-    bufferManager.onload =>
-      @playheadTime = context.currentTime
+    bufferManager.loadSamples().then => @playheadTime = context.currentTime
 
   note: (note, options={}) ->
     options = _.extend {gain: 1, duration: 3}, options
@@ -118,7 +92,7 @@ Player =
       bend += name2midi(note) - name2midi(base)
       note = base
 
-    @sampleBufferManager.withNoteBuffer note, (buffer) =>
+    @sampleBufferManager.getNoteBuffer(note).then (buffer) =>
       sourceNode = @audioContext.createBufferSource()
       sourceNode.buffer = buffer
       # TODO different tuning
@@ -169,7 +143,7 @@ Player =
     finally
       @playheadTime = savedPlayheadTime
 
-SampleManager.load()
+SampleManager.loadSamples().done()
 Player.init()
 
 module.exports = {
