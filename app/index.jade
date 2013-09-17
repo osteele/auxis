@@ -12,9 +12,13 @@ html(lang="en", ng:app="Player", ng:controller="Player")
     script(src="./js/player.js", defer)
 
   body
-    h2 Play
-    ul
-      li(ng:repeat="piece in pieces")
-        input(type="button", value="{{piece.name}}", ng:click="play(piece)")
+    .container.ng-cloak
+      table.table
+        tr(ng:repeat="piece in pieces")
+          td
+            input(type="button", value="Play", ng:click="play(piece)")
+            span
+            | {{piece.name}}
+          td {{piece.description}}
 
     p If no sound plays the first time, try reloading the page.

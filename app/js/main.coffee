@@ -1,11 +1,31 @@
-player = require './player.coffee'
+Player = require './player.coffee'
 
-pieces = {}
+InspectingPlayer =
+  description: (fn) ->
+    @segments = []
+    fn(@)
+    @segments.map((s) => @["#{s.type}Description"](s)).join(' ').replace(/,?-,?/g, '-')
 
-piece = (name, def) ->
-  pieces[name] = def
+  noteDescription: ({type, note, options}) ->
+    note
+  chordDescription: ({type, chord, options}) ->
+    chord
+  restDescription: ({type, options}) ->
+    '-'
+  progressionDescription: ({progression, options}) ->
+    progression
 
-piece 'single notes', ->
+  note: (note, options) -> @segments.push {type: 'note', note, options}
+  rest: (rest, options) -> @segments.push {type: 'rest', options}
+  chord: (chord, options) -> @segments.push {type: 'chord', chord, options}
+  progression: (progression, options) -> @segments.push {type: 'progression', progression, options}
+
+Pieces = []
+
+piece = (name, fn) ->
+  Pieces.push {name, fn}
+
+piece 'Single notes', (player) ->
   player.note 'c4'
   player.note 'e4', start: 1/2
   player.note 'g4', start: 1
@@ -14,7 +34,7 @@ piece 'single notes', ->
   player.note 'e4', start: 2.5, gain: 0.2
   player.note 'g4', start: 3, gain: 0.2
 
-piece 'arpeggiated chords', ->
+piece 'Arpeggiated chords', (player) ->
   player.chord 'C4', pick: '0121212'
   player.rest 2
   player.chord 'F4', pick: '0121212'
@@ -23,7 +43,7 @@ piece 'arpeggiated chords', ->
   player.rest 2
   player.chord 'C4', pick: '1202120', duration: 10
 
-piece 'chord progression', ->
+piece 'Chord progression', (player) ->
   player.progression 'I Ib Ic ii IV iii IVb V7 V7b V7c Ic Ib I'
   , pick: '0121'
   , chord_separation: 0
@@ -36,8 +56,9 @@ piece 'chord progression', ->
 app = angular.module 'Player', []
 
 app.controller 'Player', ($scope) ->
-  $scope.pieces = ({name, fn} for name, fn of pieces)
+  piece.description = InspectingPlayer.description(piece.fn) for piece in Pieces
+  $scope.pieces = Pieces
 
   $scope.play = ({fn}) ->
-    player.rewind()
-    fn()
+    Player.rewind()
+    fn(Player)

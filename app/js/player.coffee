@@ -24,6 +24,7 @@ xhrPromise = (options={}) ->
       d.resolve request.response
     else
       d.reject "#{method} #{url} status=#{request.status}"
+  request.onprogress = (e) -> d.notify(e.loaded / e.total)
   # setTimeout (-> request.onreadystatechange = null; d.reject()), timeout if options.timeout
   request.responseType = options.responseType if options.responseType
   request.send()
@@ -146,12 +147,4 @@ Player =
 SampleManager.loadSamples().done()
 Player.init()
 
-module.exports = {
-  note: (args...) -> Player.note(args...)
-  chord: (args...) -> Player.chord(args...)
-  progression: (args...) -> Player.progression(args...)
-  rest: (args...) -> Player.rest(args...)
-  rewind: (args...) -> Player.rewind(args...)
-  # onload
-  # with_track
-}
+module.exports = Player
