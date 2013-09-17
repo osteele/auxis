@@ -1,77 +1,80 @@
 module.exports = (grunt) ->
   grunt.initConfig
-    pkg: grunt.file.readJSON('package.json')
+    directories:
+      build: '<%= directories.dev %>'
+      dev: 'build'
+      release: 'release'
+      ':release':
+        build: '<%= directories.release %>'
+
     browserify:
-      debug:
-        files: ['build/js/player.js': 'app/**/*.coffee']
+      app:
+        files: ['<%= directories.build %>/js/player.js': 'app/**/*.coffee']
         options:
           transform: ['coffeeify']
           debug: true
           fast: true
-      release:
-        files: ['release/js/player.js': 'app/**/*.coffee']
-        options:
-          transform: ['coffeeify']
-          fast: true
+          ':release':
+            debug: false
+
     clean:
-      debug: 'build'
-      release: 'release/*'
+      dev: '<%= directories.dev %>'
+      target: '<%= directories.build %>/*'
+      release: '<%= directories.release %>/*'
+
     coffeelint:
       app: ['Gruntfile.coffee', 'app/**/*.coffee']
       options:
         max_line_length: { value: 120 }
+
     connect:
       server:
         options:
-          base: 'build'
+          base: '<%= directories.build %>'
+
     copy:
-      debug:
+      app:
         expand: true
         cwd: 'app'
-        dest: 'build'
+        dest: '<%= directories.build %>'
         src: ['**/*', '!**/*.coffee', '!**/*.jade', '!**/*.scss']
         filter: 'isFile'
-      release:
-        expand: true
-        cwd: 'app'
-        dest: 'release'
-        src: ['**/*', '!**/*.coffee', '!**/*.jade', '!**/*.scss']
-        filter: 'isFile'
+
     githubPages:
       target:
-        src: 'release'
+        src: '<%= directories.release %>'
+
     jade:
-      debug:
+      app:
         expand: true
         cwd: 'app'
         src: '**/*.jade'
-        dest: 'build'
+        dest: '<%= directories.build %>'
         ext: '.html'
-        options:
-          pretty: true
-      release:
-        expand: true
-        cwd: 'app'
-        src: '**/*.jade'
-        dest: 'release'
-        ext: '.html'
+      options:
+        pretty: true
+        ':release':
+          pretty: false
+
     peg:
       music:
         grammar: 'grammars/music.peg'
         outputFile: 'meteor/lib/music-parser.js'
         exportVar: "MusicParser"
+
     shell:
       play:
         command: 'coffee ./bin/midi-api-play.coffee'
         options:
           stdout: true
           stderr: true
+
     watch:
       options:
         livereload: true
       jade:
         files: 'app/**/*.jade'
-        tasks: ['jade:debug']
+        tasks: ['jade']
       play:
         files: 'midi-api-play.coffee'
         tasks: ['shell:play']
@@ -82,21 +85,26 @@ module.exports = (grunt) ->
         tasks: ['peg:music']
       scripts:
         files: 'app/**/*.coffee'
-        tasks: ['browserify:debug']
+        tasks: ['browserify']
 
-  grunt.loadNpmTasks 'grunt-browserify'
-  grunt.loadNpmTasks 'grunt-coffeelint'
-  grunt.loadNpmTasks 'grunt-contrib-connect'
-  grunt.loadNpmTasks 'grunt-contrib-copy'
-  grunt.loadNpmTasks 'grunt-contrib-jade'
-  grunt.loadNpmTasks 'grunt-contrib-watch'
-  grunt.loadNpmTasks 'grunt-contrib-clean'
-  grunt.loadNpmTasks 'grunt-github-pages'
-  grunt.loadNpmTasks 'grunt-notify'
-  grunt.loadNpmTasks 'grunt-peg'
-  grunt.loadNpmTasks 'grunt-shell'
+  require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'build', ['clean:debug', 'browserify:debug', 'copy:debug', 'jade:debug']
-  grunt.registerTask 'build:release', ['clean:release', 'browserify:release', 'copy:release', 'jade:release']
+  grunt.registerTask 'context', (contextName) ->
+    contextKey = ":#{contextName}"
+    installContexts = (obj) ->
+      recursiveMerge obj, obj[contextKey] if contextKey of obj
+      for k, v of obj
+        installContexts v if typeof v == 'object' and not k.match(/^:/)
+    recursiveMerge = (target, source) ->
+      for k, v of source
+        if k of target and typeof v == 'object'
+          recursiveMerge target[k], v
+        else
+          target[k] = v
+    installContexts grunt.config.data
+    return
+
+  grunt.registerTask 'build', ['clean:target', 'browserify', 'copy', 'jade']
+  grunt.registerTask 'build:release', ['context:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']
