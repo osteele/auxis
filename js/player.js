@@ -223,231 +223,293 @@ programs = {
 
 
 },{}],3:[function(require,module,exports){
-var LoadingCallbacks, NoteBuffers, PianoSampleURLBase, PitchClassNames, PlayOnLoad, SampleNotes, SampleNotesLoaded, TimeOffset, chord, context, find_chord, loadAndPlay, midi2name, n, name2midi, note, onload, progression, rest, rewind, with_track, _ref,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+var PianoSampleURLBase, PitchClassNames, Player, SampleBufferManager, SampleManager, Theory, find_chord, midi2name, n, name2midi, xhrPromise,
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
+  __slice = [].slice;
 
-_ref = require('./theory.coffee'), PitchClassNames = _ref.PitchClassNames, find_chord = _ref.find_chord, midi2name = _ref.midi2name, name2midi = _ref.name2midi;
+Theory = require('./theory.coffee');
 
-PianoSampleURLBase = "/media/piano/med/";
+PitchClassNames = Theory.PitchClassNames, find_chord = Theory.find_chord, midi2name = Theory.midi2name, name2midi = Theory.name2midi;
 
 PianoSampleURLBase = "https://s3.amazonaws.com/assets.osteele.com/audio/piano/med/";
 
-window.AudioContext || (window.AudioContext = window.webkitAudioContext);
+if (window.AudioContext == null) {
+  window.AudioContext = window.webkitAudioContext;
+}
 
-context = new window.AudioContext;
-
-SampleNotes = ['B0'].concat((function() {
-  var _i, _results;
-  _results = [];
-  for (n = _i = 1; _i <= 8; n = ++_i) {
-    _results.push("C" + n);
+xhrPromise = function(options) {
+  var d, method, request, url;
+  if (options == null) {
+    options = {};
   }
-  return _results;
-})());
-
-NoteBuffers = {};
-
-LoadingCallbacks = {};
-
-TimeOffset = 0;
-
-loadAndPlay = function(note, cb) {
-  var buffer, request, url;
-  if (buffer = NoteBuffers[note]) {
-    return cb(buffer);
-  }
-  LoadingCallbacks[note] || (LoadingCallbacks[note] = []);
-  LoadingCallbacks[note].push(cb);
-  if (LoadingCallbacks[note].length > 1) {
-    return;
-  }
-  url = "" + PianoSampleURLBase + (note.toLowerCase()) + ".mp3";
+  url = options.url, method = options.method;
+  method || (method = 'GET');
+  d = Q.defer();
   request = new XMLHttpRequest;
-  request.open('GET', url, true);
-  request.responseType = 'arraybuffer';
-  request.onload = function() {
-    return context.decodeAudioData(request.response, function(buffer) {
-      var _i, _len, _ref1;
-      NoteBuffers[note] = buffer;
-      _ref1 = LoadingCallbacks[note];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        cb = _ref1[_i];
-        cb(buffer);
-      }
-      return delete LoadingCallbacks[note];
-    }, function(e) {
-      return console.error('error loading', url);
-    });
+  request.open(method, url, true);
+  request.onreadystatechange = function() {
+    if (request.readyState !== 4) {
+      return;
+    }
+    if (request.status === 200) {
+      return d.resolve(request.response);
+    } else {
+      console.info('reject', url, status);
+      return d.reject("" + method + " " + url + " status=" + request.status);
+    }
   };
-  return request.send();
+  request.onprogress = function(e) {
+    d.notify(e.loaded / e.total);
+    return console.info(url, e.loaded, e.total);
+  };
+  if (options.responseType) {
+    request.responseType = options.responseType;
+  }
+  request.send();
+  return d.promise;
 };
 
-SampleNotesLoaded = false;
-
-PlayOnLoad = [];
-
-(function() {
-  var countdown, note, _i, _len, _results;
-  countdown = SampleNotes.length;
-  _results = [];
-  for (_i = 0, _len = SampleNotes.length; _i < _len; _i++) {
-    note = SampleNotes[_i];
-    _results.push(loadAndPlay(note, function() {
-      var fn, _j, _len1;
-      if (SampleNotesLoaded) {
-        return;
+SampleManager = {
+  sampleNotes: ['B0'].concat((function() {
+    var _i, _results;
+    _results = [];
+    for (n = _i = 1; _i <= 8; n = ++_i) {
+      _results.push("C" + n);
+    }
+    return _results;
+  })()),
+  noteBuffers: {},
+  sampleNotesLoaded: false,
+  getNoteBuffer: function(note) {
+    var _base;
+    return (_base = this.noteBuffers)[note] || (_base[note] = (function() {
+      var url;
+      url = "" + PianoSampleURLBase + (note.toLowerCase()) + ".mp3";
+      return xhrPromise({
+        url: url,
+        responseType: 'arraybuffer'
+      });
+    })());
+  },
+  loadSamples: function() {
+    var note;
+    return Q.all((function() {
+      var _i, _len, _ref, _results;
+      _ref = this.sampleNotes;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        note = _ref[_i];
+        _results.push(this.getNoteBuffer(note));
       }
-      countdown -= 1;
-      SampleNotesLoaded || (SampleNotesLoaded = countdown === 0);
-      if (!SampleNotesLoaded) {
-        return;
-      }
-      TimeOffset = context.currentTime;
-      for (_j = 0, _len1 = PlayOnLoad.length; _j < _len1; _j++) {
-        fn = PlayOnLoad[_j];
-        fn();
-      }
-      return PlayOnLoad = null;
-    }));
+      return _results;
+    }).call(this));
   }
-  return _results;
+};
+
+SampleBufferManager = (function() {
+  SampleBufferManager.prototype.noteBuffers = {};
+
+  function SampleBufferManager(audioContext) {
+    this.audioContext = audioContext;
+    this.sampleNotes = SampleManager.sampleNotes;
+    this.loadSamples();
+  }
+
+  SampleBufferManager.prototype.loadSamples = function(cb) {
+    var note;
+    return Q.all((function() {
+      var _i, _len, _ref, _results;
+      _ref = this.sampleNotes;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        note = _ref[_i];
+        _results.push(this.getNoteBuffer(note));
+      }
+      return _results;
+    }).call(this));
+  };
+
+  SampleBufferManager.prototype.getNoteBuffer = function(note, cb) {
+    var _base,
+      _this = this;
+    return (_base = this.noteBuffers)[note] || (_base[note] = SampleManager.getNoteBuffer(note).then(function(arrayBuffer) {
+      var d;
+      d = Q.defer();
+      _this.audioContext.decodeAudioData(arrayBuffer, function(buffer) {
+        return d.resolve(buffer);
+      }, function(e) {
+        return d.reject("error decoding " + note);
+      });
+      return d.promise;
+    }));
+  };
+
+  return SampleBufferManager;
+
 })();
 
-onload = function(fn) {
-  if (SampleNotesLoaded) {
-    return fn();
-  }
-  return PlayOnLoad.push(fn);
-};
-
-note = function(note, options) {
-  var base, bend, duration, startTime;
-  if (options == null) {
-    options = {};
-  }
-  options = _.extend({
-    gain: 1,
-    duration: 3
-  }, options);
-  startTime = TimeOffset + (options.start || 0);
-  bend = options.bend || 0;
-  duration = options.duration;
-  if (options.staccato) {
-    duration = .5;
-  }
-  note = note.toUpperCase();
-  if (__indexOf.call(SampleNotes, note) < 0) {
-    base = _.select(SampleNotes, function(c) {
-      return name2midi(c) <= name2midi(note);
-    }).reverse()[0];
-    bend += name2midi(note) - name2midi(base);
-    note = base;
-  }
-  return loadAndPlay(note, function(buffer) {
-    var gainNode, output, sourceNode;
-    sourceNode = context.createBufferSource();
-    sourceNode.buffer = buffer;
-    if (bend) {
-      sourceNode.playbackRate.value = Math.pow(2, bend / 12);
+Player = {
+  audioContext: null,
+  playheadTime: 0,
+  init: function() {
+    var bufferManager, context,
+      _this = this;
+    context = this.audioContext = new window.AudioContext;
+    bufferManager = this.sampleBufferManager = new SampleBufferManager(context);
+    return bufferManager.loadSamples().then(function() {
+      return _this.playheadTime = context.currentTime;
+    });
+  },
+  note: function(note, options) {
+    var base, bend, duration, sampleNotes, startTime,
+      _this = this;
+    if (options == null) {
+      options = {};
     }
-    output = sourceNode;
-    if (options.gain || duration) {
-      gainNode = context.createGain();
-      gainNode.gain.value = options.gain;
-      gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
-      sourceNode.connect(gainNode);
-      gainNode.connect(context.destination);
-      output = gainNode;
+    options = _.extend({
+      gain: 1,
+      duration: 3
+    }, options);
+    startTime = this.playheadTime + (options.start || 0);
+    bend = options.bend || 0;
+    duration = options.duration;
+    if (options.staccato) {
+      duration = .5;
     }
-    output.connect(context.destination);
-    return sourceNode.start(startTime);
-  });
-};
-
-chord = function(chord, options) {
-  var i, start, _i, _j, _len, _len1, _ref1, _ref2, _results;
-  if (options == null) {
-    options = {};
-  }
-  chord = find_chord(chord);
-  start = options.start || 0;
-  if (options.pick) {
-    _ref1 = options.pick;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      n = _ref1[_i];
-      note(chord.notes[Number(n)], _.extend({}, options, {
-        start: start
-      }));
-      start += options.note_separation || .25;
+    note = note.toUpperCase();
+    sampleNotes = this.sampleBufferManager.sampleNotes;
+    if (__indexOf.call(sampleNotes, note) < 0) {
+      base = _.select(sampleNotes, function(c) {
+        return name2midi(c) <= name2midi(note);
+      }).reverse()[0];
+      bend += name2midi(note) - name2midi(base);
+      note = base;
     }
-    return;
-  }
-  _ref2 = chord.notes;
-  _results = [];
-  for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
-    n = _ref2[i];
-    note(n, _.extend({}, options, {
-      start: start
-    }));
-    if (options.arpeggiate) {
-      _results.push(start += options.note_separation);
+    return this.sampleBufferManager.getNoteBuffer(note).then(function(buffer) {
+      var gainNode, output, sourceNode;
+      sourceNode = _this.audioContext.createBufferSource();
+      sourceNode.buffer = buffer;
+      if (bend) {
+        sourceNode.playbackRate.value = Math.pow(2, bend / 12);
+      }
+      output = sourceNode;
+      if (options.gain || duration) {
+        gainNode = _this.audioContext.createGain();
+        gainNode.gain.value = options.gain;
+        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+        sourceNode.connect(gainNode);
+        gainNode.connect(_this.audioContext.destination);
+        output = gainNode;
+      }
+      output.connect(_this.audioContext.destination);
+      return sourceNode.start(startTime);
+    });
+  },
+  chord: function(chord, options) {
+    var i, start, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+    if (options == null) {
+      options = {};
+    }
+    chord = find_chord(chord);
+    start = options.start || 0;
+    if (options.pick) {
+      _ref = options.pick;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        n = _ref[_i];
+        this.note(chord.notes[Number(n)], _.extend({}, options, {
+          start: start
+        }));
+        _results.push(start += options.note_separation || .25);
+      }
+      return _results;
     } else {
-      _results.push(void 0);
+      _ref1 = chord.notes;
+      _results1 = [];
+      for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
+        n = _ref1[i];
+        this.note(n, _.extend({}, options, {
+          start: start
+        }));
+        if (options.arpeggiate) {
+          _results1.push(start += options.note_separation);
+        } else {
+          _results1.push(void 0);
+        }
+      }
+      return _results1;
+    }
+  },
+  progression: function(chords, options) {
+    var chord, dur, _i, _len, _ref, _results;
+    if (options == null) {
+      options = {};
+    }
+    options = _.extend({
+      root: 'C4',
+      note_separation: .2,
+      chord_separation: .2
+    }, options);
+    if (typeof chords === 'string') {
+      chords = Theory.progression(options.root, chords);
+    }
+    _results = [];
+    for (_i = 0, _len = chords.length; _i < _len; _i++) {
+      chord = chords[_i];
+      this.chord(chord, options);
+      dur = ((_ref = options.pick) != null ? _ref.length : void 0) * options.note_separation || 0;
+      dur += options.chord_separation;
+      _results.push(this.rest(dur));
+    }
+    return _results;
+  },
+  rewind: function() {
+    return this.playheadTime = this.audioContext.currentTime;
+  },
+  rest: function(t) {
+    return this.playheadTime += t;
+  },
+  withTrack: function(fn) {
+    var savedPlayheadTime;
+    savedPlayheadTime = this.playheadTime;
+    try {
+      return fn();
+    } finally {
+      this.playheadTime = savedPlayheadTime;
     }
   }
-  return _results;
 };
 
-progression = function(chords, options) {
-  var dur, _i, _len, _ref1, _results;
-  if (options == null) {
-    options = {};
-  }
-  options = _.extend({
-    root: 'C4',
-    note_separation: .2,
-    chord_separation: .2
-  }, options);
-  if (typeof chords === 'string') {
-    chords = Theory.progression(options.root, chords);
-  }
-  _results = [];
-  for (_i = 0, _len = chords.length; _i < _len; _i++) {
-    chord = chords[_i];
-    player.chord(chord, options);
-    dur = ((_ref1 = options.pick) != null ? _ref1.length : void 0) * options.note_separation || 0;
-    dur += options.chord_separation;
-    _results.push(player.rest(dur));
-  }
-  return _results;
-};
+SampleManager.loadSamples().done();
 
-rewind = function() {
-  return TimeOffset = context.currentTime;
-};
-
-rest = function(t) {
-  return TimeOffset += t;
-};
-
-with_track = function(fn) {
-  var saved_time_offset;
-  saved_time_offset = TimeOffset;
-  try {
-    return fn();
-  } finally {
-    TimeOffset = saved_time_offset;
-  }
-};
+Player.init();
 
 module.exports = {
-  note: note,
-  chord: chord,
-  progression: progression,
-  rest: rest,
-  rewind: rewind,
-  onload: onload,
-  with_track: with_track
+  note: function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return Player.note.apply(Player, args);
+  },
+  chord: function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return Player.chord.apply(Player, args);
+  },
+  progression: function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return Player.progression.apply(Player, args);
+  },
+  rest: function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return Player.rest.apply(Player, args);
+  },
+  rewind: function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return Player.rewind.apply(Player, args);
+  }
 };
 
 
