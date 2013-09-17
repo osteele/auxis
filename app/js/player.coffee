@@ -1,10 +1,38 @@
+# Q = require("q")
 Theory = require './theory.coffee'
 {PitchClassNames, find_chord, midi2name, name2midi} = Theory
 
 # PianoSampleURLBase = "/media/piano/med/"
 PianoSampleURLBase = "https://s3.amazonaws.com/assets.osteele.com/audio/piano/med/"
 
+
+#
+# Shims
+#
+
 window.AudioContext ?= window.webkitAudioContext
+
+xhrPromise = (options={}) ->
+  {url, method} = options
+  method or= 'GET'
+  d = Q.defer()
+  request = new XMLHttpRequest
+  request.open method, url, true
+  request.onreadystatechange = ->
+    return unless request.readyState == 4
+    if request.status == 200
+      d.resolve request.response
+    else
+      d.reject "#{method} #{url} status=#{request.status}"
+  # setTimeout (-> request.onreadystatechange = null; d.reject()), timeout if options.timeout
+  request.responseType = options.responseType if options.responseType
+  request.send()
+  return d.promise
+
+
+#
+# Player
+#
 
 SampleManager =
   sampleNotes: ['B0'].concat ("C#{n}" for n in [1..8])
@@ -19,14 +47,12 @@ SampleManager =
     @loadingCallbacks[note].push cb
     return if @loadingCallbacks[note].length > 1
     url = "#{PianoSampleURLBase}#{note.toLowerCase()}.mp3"
-    request = new XMLHttpRequest
-    request.open 'GET', url, true
-    request.responseType = 'arraybuffer'
-    request.onload = =>
-      @noteBuffers[note] = buffer = request.response
-      cb(buffer) for cb in @loadingCallbacks[note]
-      delete @loadingCallbacks[note]
-    request.send()
+    xhrPromise({url, responseType: 'arraybuffer'})
+      .then (buffer) =>
+        @noteBuffers[note] = buffer
+        cb(buffer) for cb in @loadingCallbacks[note]
+        delete @loadingCallbacks[note]
+      .done()
 
   load: ->
     countdown = @sampleNotes.length
