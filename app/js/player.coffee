@@ -43,18 +43,17 @@ SampleManager =
     return window.setTimeout(cb, 1) if @sampleNotesLoaded
     @playOnLoad.push cb
 
-Player =
-  audioContext: null
-  playheadTime: 0
+class SampleBufferManager
   loadingCallbacks: {}
   noteBuffers: {}
 
-  init: ->
-    @audioContext = new window.AudioContext
-    SampleManager.sampleNotes.map (note) =>
+  constructor: (@audioContext) ->
+    @sampleNotes = SampleManager.sampleNotes
+    @sampleNotes.map (note) =>
       @withNoteBuffer note, ->
-    SampleManager.onload =>
-      @playheadTime = @audioContext.currentTime
+
+  onload: (cb) ->
+    SampleManager.onload(cb)
 
   withNoteBuffer: (note, cb) ->
     return cb(buffer) if buffer = @noteBuffers[note]
@@ -68,6 +67,16 @@ Player =
         delete @loadingCallbacks[note]
       , (e) -> console.error 'error decoding', note
 
+Player =
+  audioContext: null
+  playheadTime: 0
+
+  init: ->
+    context = @audioContext = new window.AudioContext
+    bufferManager = @sampleBufferManager = new SampleBufferManager(context)
+    bufferManager.onload =>
+      @playheadTime = context.currentTime
+
   note: (note, options={}) ->
     options = _.extend {gain: 1, duration: 3}, options
     startTime = @playheadTime + (options.start or 0)
@@ -75,11 +84,15 @@ Player =
     {duration} = options
     duration = .5 if options.staccato
     note = note.toUpperCase()
-    unless note in SampleManager.sampleNotes
-      base = _.select(SampleManager.sampleNotes, (c) -> name2midi(c) <= name2midi(note)).reverse()[0]
+
+    # find closest sample
+    sampleNotes = @sampleBufferManager.sampleNotes
+    unless note in sampleNotes
+      base = _.select(sampleNotes, (c) -> name2midi(c) <= name2midi(note)).reverse()[0]
       bend += name2midi(note) - name2midi(base)
       note = base
-    @withNoteBuffer note, (buffer) =>
+
+    @sampleBufferManager.withNoteBuffer note, (buffer) =>
       sourceNode = @audioContext.createBufferSource()
       sourceNode.buffer = buffer
       # TODO different tuning
