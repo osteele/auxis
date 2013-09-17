@@ -1,15 +1,76 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var app, piece, pieces, player;
+var InspectingPlayer, Pieces, Player, app, piece;
 
-player = require('./player.coffee');
+Player = require('./player.coffee');
 
-pieces = {};
-
-piece = function(name, def) {
-  return pieces[name] = def;
+InspectingPlayer = {
+  description: function(fn) {
+    var _this = this;
+    this.segments = [];
+    fn(this);
+    return this.segments.map(function(s) {
+      return _this["" + s.type + "Description"](s);
+    }).join(' ').replace(/,?-,?/g, '-');
+  },
+  noteDescription: function(_arg) {
+    var note, options, type;
+    type = _arg.type, note = _arg.note, options = _arg.options;
+    return note;
+  },
+  chordDescription: function(_arg) {
+    var chord, options, type;
+    type = _arg.type, chord = _arg.chord, options = _arg.options;
+    return chord;
+  },
+  restDescription: function(_arg) {
+    var options, type;
+    type = _arg.type, options = _arg.options;
+    return '-';
+  },
+  progressionDescription: function(_arg) {
+    var options, progression;
+    progression = _arg.progression, options = _arg.options;
+    return progression;
+  },
+  note: function(note, options) {
+    return this.segments.push({
+      type: 'note',
+      note: note,
+      options: options
+    });
+  },
+  rest: function(rest, options) {
+    return this.segments.push({
+      type: 'rest',
+      options: options
+    });
+  },
+  chord: function(chord, options) {
+    return this.segments.push({
+      type: 'chord',
+      chord: chord,
+      options: options
+    });
+  },
+  progression: function(progression, options) {
+    return this.segments.push({
+      type: 'progression',
+      progression: progression,
+      options: options
+    });
+  }
 };
 
-piece('single notes', function() {
+Pieces = [];
+
+piece = function(name, fn) {
+  return Pieces.push({
+    name: name,
+    fn: fn
+  });
+};
+
+piece('Single notes', function(player) {
   player.note('c4');
   player.note('e4', {
     start: 1 / 2
@@ -31,7 +92,7 @@ piece('single notes', function() {
   });
 });
 
-piece('arpeggiated chords', function() {
+piece('Arpeggiated chords', function(player) {
   player.chord('C4', {
     pick: '0121212'
   });
@@ -50,7 +111,7 @@ piece('arpeggiated chords', function() {
   });
 });
 
-piece('chord progression', function() {
+piece('Chord progression', function(player) {
   player.progression('I Ib Ic ii IV iii IVb V7 V7b V7c Ic Ib I', {
     pick: '0121',
     chord_separation: 0,
@@ -65,24 +126,17 @@ piece('chord progression', function() {
 app = angular.module('Player', []);
 
 app.controller('Player', function($scope) {
-  var fn, name;
-  $scope.pieces = (function() {
-    var _results;
-    _results = [];
-    for (name in pieces) {
-      fn = pieces[name];
-      _results.push({
-        name: name,
-        fn: fn
-      });
-    }
-    return _results;
-  })();
+  var _i, _len;
+  for (_i = 0, _len = Pieces.length; _i < _len; _i++) {
+    piece = Pieces[_i];
+    piece.description = InspectingPlayer.description(piece.fn);
+  }
+  $scope.pieces = Pieces;
   return $scope.play = function(_arg) {
     var fn;
     fn = _arg.fn;
-    player.rewind();
-    return fn();
+    Player.rewind();
+    return fn(Player);
   };
 });
 
@@ -224,8 +278,7 @@ programs = {
 
 },{}],3:[function(require,module,exports){
 var PianoSampleURLBase, PitchClassNames, Player, SampleBufferManager, SampleManager, Theory, find_chord, midi2name, n, name2midi, xhrPromise,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
-  __slice = [].slice;
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Theory = require('./theory.coffee');
 
@@ -254,13 +307,11 @@ xhrPromise = function(options) {
     if (request.status === 200) {
       return d.resolve(request.response);
     } else {
-      console.info('reject', url, status);
       return d.reject("" + method + " " + url + " status=" + request.status);
     }
   };
   request.onprogress = function(e) {
-    d.notify(e.loaded / e.total);
-    return console.info(url, e.loaded, e.total);
+    return d.notify(e.loaded / e.total);
   };
   if (options.responseType) {
     request.responseType = options.responseType;
@@ -484,33 +535,7 @@ SampleManager.loadSamples().done();
 
 Player.init();
 
-module.exports = {
-  note: function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return Player.note.apply(Player, args);
-  },
-  chord: function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return Player.chord.apply(Player, args);
-  },
-  progression: function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return Player.progression.apply(Player, args);
-  },
-  rest: function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return Player.rest.apply(Player, args);
-  },
-  rewind: function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return Player.rewind.apply(Player, args);
-  }
-};
+module.exports = Player;
 
 
 },{"./theory.coffee":4}],4:[function(require,module,exports){
