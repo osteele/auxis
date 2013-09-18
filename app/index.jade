@@ -4,6 +4,7 @@ html(lang="en", ng:app="Player", ng:controller="Player")
     title Auxis
 
     link(href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/css/bootstrap.min.css", rel="stylesheet", type="text/css")
+    link(href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css", rel="stylesheet")
 
     script(src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js")
     script(src="//cdnjs.cloudflare.com/ajax/libs/q.js/0.9.6/q.min.js")
@@ -16,9 +17,8 @@ html(lang="en", ng:app="Player", ng:controller="Player")
       table.table
         tr(ng:repeat="piece in pieces")
           td
-            input(type="button", value="Play", ng:click="play(piece)")
-            span
-            | {{piece.name}}
+            a.btn(ng:click="play(piece)"): i.icon-play-sign.icon-2x
+          th {{piece.name}}
           td {{piece.description}}
 
     p If no sound plays the first time, try reloading the page.
