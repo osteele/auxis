@@ -17,7 +17,7 @@ html(lang="en", ng:app="Player", ng:controller="Player")
       table.table
         tr(ng:repeat="piece in pieces")
           td
-            a.btn(ng:click="play(piece)"): i.icon-play-sign.icon-2x
+            a.btn(ng:click="play(piece)", ng-class="{disabled: playing}"): i.icon-play-sign.icon-2x
           th {{piece.name}}
           td {{piece.description}}
 

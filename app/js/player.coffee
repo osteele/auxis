@@ -72,19 +72,35 @@ class SampleBufferManager
 class Player
   audioContext: null
   playheadTime: 0
+  startTime: 0
+  duration: 0
 
   constructor: ->
     context = @audioContext = new window.AudioContext
     bufferManager = @sampleBufferManager = new SampleBufferManager(context)
     bufferManager.loadSamples().then => @playheadTime = context.currentTime
+    @deferred = Q.defer()
+    @promise = @deferred.promise
+    @rewind()
 
   note: (note, options={}) ->
-    options = _.extend {gain: 1, duration: 3}, options
-    startTime = @playheadTime + (options.start or 0)
-    bend = options.bend or 0
-    {duration} = options
-    duration = .5 if options.staccato
+    options = _.extend {start: 0, gain: 1}, options
+    {start, duration, bend} = options
+    startTime = @playheadTime + start
+    duration = if options.staccato then .5 else 3
+    bend or= 0
     note = note.toUpperCase()
+
+    @duration = Math.max(@duration, start + duration)
+    updateEndTimer = =>
+      endTime = @startTime + @duration
+      remainingS = endTime - @audioContext.currentTime
+      timer = =>
+        @endTimer = null
+        return updateEndTimer() if remainingS > 0
+        @deferred.notify {type: 'done'}
+      @endTimer or= window.setTimeout timer, 1000 * remainingS
+    updateEndTimer()
 
     # find closest sample
     sampleNotes = @sampleBufferManager.sampleNotes
@@ -132,7 +148,8 @@ class Player
       @rest dur
 
   rewind: ->
-    @playheadTime = @audioContext.currentTime
+    @playheadTime = @startTime = @audioContext.currentTime
+    @duration = 0
 
   rest: (t) ->
     @playheadTime += t

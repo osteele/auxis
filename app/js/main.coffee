@@ -58,8 +58,11 @@ app = angular.module 'Player', []
 app.controller 'Player', ($scope) ->
   piece.description = InspectingPlayer.description(piece.playFunction) for piece in Pieces
   $scope.pieces = Pieces
+  $scope.playing = false
   player = new Player
+  player.promise.progress ({type}) -> $scope.$apply -> $scope.playing = false
 
   $scope.play = (piece) ->
+    $scope.playing = true
     player.rewind()
     piece.playFunction(player)
