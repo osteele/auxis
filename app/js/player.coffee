@@ -69,11 +69,11 @@ class SampleBufferManager
         , (e) -> d.reject "error decoding #{note}"
         d.promise
 
-Player =
+class Player
   audioContext: null
   playheadTime: 0
 
-  init: ->
+  constructor: ->
     context = @audioContext = new window.AudioContext
     bufferManager = @sampleBufferManager = new SampleBufferManager(context)
     bufferManager.loadSamples().then => @playheadTime = context.currentTime
@@ -145,6 +145,5 @@ Player =
       @playheadTime = savedPlayheadTime
 
 SampleManager.loadSamples().done()
-Player.init()
 
 module.exports = Player

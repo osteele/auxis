@@ -1,9 +1,9 @@
 Player = require './player.coffee'
 
 InspectingPlayer =
-  description: (fn) ->
+  description: (playFunction) ->
     @segments = []
-    fn(@)
+    playFunction(@)
     @segments.map((s) => @["#{s.type}Description"](s)).join(' ').replace(/,?-,?/g, '-')
 
   noteDescription: ({type, note, options}) ->
@@ -22,8 +22,8 @@ InspectingPlayer =
 
 Pieces = []
 
-piece = (name, fn) ->
-  Pieces.push {name, fn}
+piece = (name, playFunction) ->
+  Pieces.push {name, playFunction}
 
 piece 'Single notes', (player) ->
   player.note 'c4'
@@ -56,9 +56,10 @@ piece 'Chord progression', (player) ->
 app = angular.module 'Player', []
 
 app.controller 'Player', ($scope) ->
-  piece.description = InspectingPlayer.description(piece.fn) for piece in Pieces
+  piece.description = InspectingPlayer.description(piece.playFunction) for piece in Pieces
   $scope.pieces = Pieces
+  player = new Player
 
-  $scope.play = ({fn}) ->
-    Player.rewind()
-    fn(Player)
+  $scope.play = (piece) ->
+    player.rewind()
+    piece.playFunction(player)
