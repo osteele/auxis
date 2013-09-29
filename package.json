@@ -20,15 +20,15 @@
     "grunt-contrib-connect": "~0.5.x",
     "grunt-contrib-copy": "~0.4.x",
     "grunt-contrib-jade": "~0.8.x",
-    "grunt-contrib-watch": "~0.4.x",
+    "grunt-contrib-watch": "~0.5.x",
     "grunt-github-pages": "0.0.x",
     "grunt-notify": "~0.2.x",
-    "grunt-peg": "~0.2.x",
-    "grunt-shell": "~0.2.x",
+    "grunt-peg": "~1.0.x",
+    "grunt-shell": "~0.4.x",
     "peg": "0.0.0",
     "load-grunt-tasks": "~0.1.x",
     "grunt-update": "~0.2.1",
     "grunt-contextualize": "~0.2.1",
-    "grunt-autowatch": "~0.1.0"
+    "grunt-autowatch": "~0.1.1"
   }
 }
