@@ -81,7 +81,7 @@ module.exports = (grunt) ->
         tasks: ['peg:music']
         files: 'grammars/music.peg'
       browserify:
-        files: 'app/**/*.coffee'
+        files: ['app/**/*.coffee', 'node_modules/schoen/dist/**/*.{js,coffee}']
 
   require('load-grunt-tasks')(grunt)
 

@@ -1,6 +1,6 @@
 # Q = require("q")
-Theory = require './theory.coffee'
-{PitchClassNames, find_chord, midi2name, name2midi} = Theory
+Theory = require('schoen').theory
+{Chord, PitchClassNames, midi2name, name2midi} = Theory
 
 # PianoSampleURLBase = "/media/piano/med/"
 PianoSampleURLBase = "https://s3.amazonaws.com/assets.osteele.com/audio/piano/med/"
@@ -84,6 +84,7 @@ class Player
     @rewind()
 
   note: (note, options={}) ->
+    note = midi2name(note) unless typeof note =='string'
     options = _.extend {start: 0, gain: 1}, options
     {start, duration, bend} = options
     startTime = @playheadTime + start
@@ -127,20 +128,20 @@ class Player
       sourceNode.start startTime
 
   chord: (chord, options={}) ->
-    chord = find_chord chord
+    chord = Chord.find(chord) unless chord instanceof Chord
     start = options.start or 0
     if options.pick
       for n in options.pick
-        @note chord.notes[Number(n)], _.extend({}, options, {start})
+        @note chord.pitches[Number(n)], _.extend({}, options, {start})
         start += options.note_separation or .25
     else
-      for n, i in chord.notes
+      for n, i in chord.pitches
         @note n, _.extend({}, options, {start})
         start += options.note_separation if options.arpeggiate
 
   progression: (chords, options={}) ->
     options = _.extend {root: 'C4', note_separation: .2, chord_separation: .2}, options
-    chords = Theory.progression options.root, chords if typeof chords == 'string'
+    chords = Chord.progression(options.root, chords) if typeof chords == 'string'
     for chord in chords
       @chord chord, options
       dur = options.pick?.length * options.note_separation or 0
