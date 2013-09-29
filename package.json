@@ -26,6 +26,9 @@
     "grunt-peg": "~0.2.x",
     "grunt-shell": "~0.2.x",
     "peg": "0.0.0",
-    "load-grunt-tasks": "~0.1.x"
+    "load-grunt-tasks": "~0.1.x",
+    "grunt-update": "~0.2.1",
+    "grunt-contextualize": "~0.2.1",
+    "grunt-autowatch": "~0.1.0"
   }
 }
